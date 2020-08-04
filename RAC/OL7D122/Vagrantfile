@@ -1,0 +1,70 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+require 'yaml'
+VAGRANTFILE_API_VERSION = "2"
+
+# You might need this in the session.
+# export SSH_AUTH_SOCK=""
+
+# Variables
+params = YAML.load_file 'config/vagrant.yml'
+var_box                     = params['shared']['box']
+var_non_rotational          = params['shared']['non_rotational']
+var_software_folder         = params['shared']['software_folder']
+var_cluster_name            = params['shared']['cluster_name']
+var_cluster_node_count      = params['shared']['cluster_node_count']
+var_dns_ip_address          = params['shared']['dns_ip_address']
+var_public_subnet           = params['shared']['public_subnet']
+var_private_subnet          = params['shared']['private_subnet'] 
+var_host_only_adapter_name  = params['shared']['host_only_adapter_name']
+var_sata_controller_name    = params['shared']['sata_controller_name']
+
+# ASM Info
+var_ASM_disk_base_folder    = params['shared']['ASM_disk_base_folder']
+var_ASM_DATA_filename       = params['shared']['ASM_DATA_filename']
+var_ASM_DATA_disk_count     = params['shared']['ASM_DATA_disk_count']
+var_ASM_DATA_disk_size_GB   = params['shared']['ASM_DATA_disk_size_GB']
+var_ASM_FRA_filename        = params['shared']['ASM_FRA_filename']
+var_ASM_FRA_disk_count      = params['shared']['ASM_FRA_disk_count']
+var_ASM_FRA_disk_size_GB    = params['shared']['ASM_FRA_disk_size_GB']
+
+# DNS
+var_dns_mem_size            = params['dns']['mem_size']
+var_dns_cpu                 = params['dns']['cpus']
+
+# Nodes
+var_dns_mem_size            = params['node']['mem_size']
+var_dns_cpu                 = params['node']['cpus']
+
+####### Vagrant File Configuration
+## DNS
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+	config.vm.define var_cluster_name + "DNS" do |cfg|
+		cfg.vm.synced_folder var_software_folder, "/stage/df_Database"
+		cfg.vm.provider "virtualbox" do |vb, override|
+			config.vm.box = var_box
+			override.vm.network "private_network", ip: var_dns_ip_address, name: var_host_only_adapter_name
+			override.vm.hostname = var_cluster_name + "DNS"
+			vb.name = var_cluster_name + "DNS"
+			vb.customize ["modifyvm", :id, "--memory", var_dns_mem_size, "--cpus", var_dns_cpu, "--groups", "/"+var_cluster_name]
+			vb.customize ["storageattach", :id, "--storagectl", var_sata_controller_name, "--port", "0", "--nonrotational", var_non_rotational]
+		end # end provider
+		config.vm.provision "shell", inline: <<-SHELL
+			sh /vagrant/scripts/1.DNSSetup.sh
+		SHELL
+	end # end config
+end
+
+## All Nodes
+#Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+#
+#  (1..var_cluster_node_count).each do |i|
+#    config.vm.define "node-#{i}" do |node|
+#      node.vm.box = "ubuntu/trusty64"
+#      node.vm.network "private_network", ip: var_public_subnet+"#{i}", auto_config: false
+#      node.vm.provision "shell", inline: "echo hello from node #{i}"
+#    end
+#  end
+#end
+
