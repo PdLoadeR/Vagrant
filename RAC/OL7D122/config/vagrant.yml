@@ -1,0 +1,23 @@
+shared:
+  box: pdloader/OL78Base
+  non_rotational: 'on'
+  software_folder: ''
+  cluster_name: 'OL7D122RAC'
+  cluster_node_count: 4
+  public_subnet: 192.168.56.0
+  private_subnet: 192.168.1.0
+  ASM_disk_base_folder:  'F:\~Vagrant\VMDisks'
+  ASM_DATA_filename: 'ASMDATA'
+  ASM_DATA_disk_count: 5
+  ASM_DATA_disk_size_GB: 5
+  ASM_FRA_filename: 'ASMFRA'
+  ASM_FRA_disk_count: 3
+  ASM_FRA_disk_size_GB: 5
+
+dns:
+  mem_size: 1024
+  cpus: 1
+  
+node:
+  mem_size: 10240
+  cpus: 6
