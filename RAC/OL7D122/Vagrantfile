@@ -11,11 +11,15 @@ params = YAML.load_file 'config/vagrant.yml'
 var_box                     = params['shared']['box']
 var_non_rotational          = params['shared']['non_rotational']
 var_software_folder         = params['shared']['software_folder']
+var_domain_name             = params['shared']['domain_name']  
 var_cluster_name            = params['shared']['cluster_name']
 var_cluster_node_count      = params['shared']['cluster_node_count']
-var_dns_ip_address          = params['shared']['dns_ip_address']
 var_public_subnet           = params['shared']['public_subnet']
-var_private_subnet          = params['shared']['private_subnet'] 
+var_private_subnet          = params['shared']['private_subnet']
+var_dns_ip_address          = params['shared']['dns_ip_address']
+var_cluster_ip_start        = params['shared']['cluster_ip_start']
+var_listener_port_start       = params['shared']['listener_port_start']
+var_em_port_start             = params['shared']['em_port_start']
 var_host_only_adapter_name  = params['shared']['host_only_adapter_name']
 var_sata_controller_name    = params['shared']['sata_controller_name']
 
@@ -33,32 +37,84 @@ var_dns_mem_size            = params['dns']['mem_size']
 var_dns_cpu                 = params['dns']['cpus']
 
 # Nodes
-var_dns_mem_size            = params['node']['mem_size']
-var_dns_cpu                 = params['node']['cpus']
+var_node_mem_size           = params['nodes']['mem_size']
+var_node_cpu                = params['nodes']['cpus']
 
 ####### Vagrant File Configuration
-## DNS
+### DNS
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-
-	config.vm.define var_cluster_name + "DNS" do |cfg|
-		cfg.vm.synced_folder var_software_folder, "/stage/df_Database"
-		cfg.vm.provider "virtualbox" do |vb, override|
-			config.vm.box = var_box
+	config.vm.define var_cluster_name + "DNS" do |dns|
+		dns.vm.synced_folder var_software_folder, "/stage/df_Database"
+		dns.vm.box = var_box
+		dns.vm.provider "virtualbox" do |vb, override|
 			override.vm.network "private_network", ip: var_dns_ip_address, name: var_host_only_adapter_name
-			override.vm.hostname = var_cluster_name + "DNS"
+			override.vm.hostname = var_cluster_name + "DNS" + "." + var_domain_name
 			vb.name = var_cluster_name + "DNS"
-			vb.customize ["modifyvm", :id, "--memory", var_dns_mem_size, "--cpus", var_dns_cpu, "--groups", "/"+var_cluster_name]
+			vb.customize ["modifyvm", :id, "--memory", var_dns_mem_size, "--cpus", var_dns_cpu, "--groups", "/#{var_cluster_name}"]
 			vb.customize ["storageattach", :id, "--storagectl", var_sata_controller_name, "--port", "0", "--nonrotational", var_non_rotational]
 		end # end provider
-		config.vm.provision "shell", inline: <<-SHELL
+		dns.vm.provision "shell", inline: <<-SHELL
 			sh /vagrant/scripts/1.DNSSetup.sh
 		SHELL
-	end # end config
+	end # end DNS
 end
 
-## All Nodes
+### All Nodes
+## Create the array of nodes and each node's configuration
+rac_nodes = []
+private_subnet_ip=var_private_subnet.split('.')[0,3].join('.') 
+public_subnet_ip=var_cluster_ip_start.split('.')[0,3].join('.') 
+host_ip=var_cluster_ip_start.split('.')[3,4].join('.') #100
+scan_first_ip = 0
+
+(1..var_cluster_node_count.to_i).each do |node_num|
+	rac_nodes << {
+	    :hostname => var_cluster_name+"#{node_num}".rjust(2,'0'), 
+	    :public_ip => "#{public_subnet_ip}.#{host_ip.to_i+node_num}", 
+	    :private_ip => "#{private_subnet_ip}.#{host_ip.to_i+node_num}", 
+	    :virtual_ip => "#{public_subnet_ip}.#{host_ip.to_i+var_cluster_node_count.to_i+node_num}", 
+	    :listener_port => "#{var_listener_port_start.to_i+node_num}", 
+	    :em_port => "#{var_em_port_start.to_i+node_num}"
+	}
+	scan_first_ip = host_ip.to_i+var_cluster_node_count.to_i+node_num
+end
+
+## Create an array for scan ports
+scan_ports = []
+(1..3).each do |n|
+    scan_ports << {
+        :port => "#{public_subnet_ip}.#{scan_first_ip.to_i+n}"
+    }
+end
+
+# Print information of the members of the cluster
+puts "--------------- CLUSTER MEMBERS ----------------"
+rac_nodes.each { |n| puts "#{n[:hostname]} : #{n[:public_ip]} : #{n[:private_ip]} : #{n[:virtual_ip]} : #{n[:listener_port]} : #{n[:em_port]}" }
+puts "------------------------------------------------"
+puts "--------------- SCAN PORTS ----------------"
+scan_ports.each { |n| puts "#{n[:port]}   #{var_cluster_name}-scan.#{var_domain_name}   #{var_cluster_name} " }
+puts "------------------------------------------------"
+puts "--------------- HOST FILE  ----------------"
+puts "# Public"
+rac_nodes.each { |n| puts "#{n[:public_ip]} : #{n[:hostname]}.#{var_domain_name} : #{n[:hostname]} " }
+puts "# Private"
+rac_nodes.each { |n| puts "#{n[:private_ip]} : #{n[:hostname]}-priv.#{var_domain_name} : #{n[:hostname]}-priv " }
+puts "# Virtual"
+rac_nodes.each { |n| puts "#{n[:virtual_ip]} : #{n[:hostname]}-vip.#{var_domain_name} : #{n[:hostname]}-vip " }
+puts "------------------------------------------------"
+
 #Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-#
+#  (1..var_cluster_node_count).each do |i|
+#    config.vm.define "node-#{i}" do |node|
+#      node.vm.box = "ubuntu/trusty64"
+#      node.vm.network "private_network", ip: var_public_subnet+"#{i}", auto_config: false
+#      node.vm.provision "shell", inline: "echo hello from node #{i}"
+#    end
+#  end
+#end
+
+#Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+# Add Private and Public IP address, and node names in to a 2x3 array to be parsed into host file later
 #  (1..var_cluster_node_count).each do |i|
 #    config.vm.define "node-#{i}" do |node|
 #      node.vm.box = "ubuntu/trusty64"
