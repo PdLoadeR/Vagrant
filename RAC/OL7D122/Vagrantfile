@@ -82,7 +82,7 @@ asm_data_disks = []
 (1..var_ASM_DATA_disk_count).each do |n|
     disk_port += 1
     asm_data_disks << {
-        :asm_data_disk_path => "#{var_shared_disk_folder}\\#{var_ASM_DATA_filename}"+"#{n}".rjust(2,'0')+".vdi",
+        :asm_data_disk_path => "#{var_shared_disk_folder}\\#{var_cluster_name}\\#{var_ASM_DATA_filename}"+"#{n}".rjust(2,'0')+".vdi",
 		:asm_data_disk_size => var_ASM_DATA_disk_size_GB,
 		:port => disk_port
     }
@@ -92,7 +92,7 @@ asm_fra_disks = []
 (1..var_ASM_FRA_disk_count).each do |n|
     disk_port += 1
     asm_fra_disks << {
-        :asm_fra_disk_path => "#{var_shared_disk_folder}\\#{var_ASM_FRA_filename}"+"#{n}".rjust(2,'0')+".vdi",
+        :asm_fra_disk_path => "#{var_shared_disk_folder}\\#{var_cluster_name}\\#{var_ASM_FRA_filename}"+"#{n}".rjust(2,'0')+".vdi",
 		:asm_fra_disk_size => var_ASM_FRA_disk_size_GB,
 		:port => disk_port
     }
@@ -181,7 +181,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 				]
 				
 				local_disks.each do |disk|
-					disk_name=disk[:disk_path]+"\\#{node[:hostname]}_u01.vdi"
+					disk_name=disk[:disk_path]+"\\#{var_cluster_name}\\#{node[:hostname]}_u01.vdi"
 					unless File.exist?(disk_name)
 					  vb.customize ['createhd', '--filename', disk_name, '--size', disk[:disk_size].to_i * 1024]
 					end
