@@ -191,16 +191,18 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 					vb.customize ['storageattach', :id, '--storagectl', var_sata_controller_name, '--port', disk[:port].to_i, '--device', 0, '--type', 'hdd', '--medium', disk_name, '--nonrotational', var_non_rotational]
 				end
 				asm_data_disks.each do |disk|
-					unless File.exist?(disk[:asm_data_disk_path])
-					  vb.customize ['createhd', '--filename', disk[:asm_data_disk_path], '--size', disk[:asm_data_disk_size].to_i * 1024]
+					disk_name=disk[:asm_data_disk_path]
+					unless File.exist?(disk_name)
+					  vb.customize ['createhd', '--filename', disk_name, '--size', disk[:asm_data_disk_size].to_i * 1024]
 					end
-					vb.customize ['storageattach', :id, '--storagectl', var_sata_controller_name, '--port', disk[:port].to_i, '--device', 0, '--type', 'hdd', '--medium', disk[:asm_data_disk_path], '--nonrotational', var_non_rotational]
+					vb.customize ['storageattach', :id, '--storagectl', var_sata_controller_name, '--port', disk[:port].to_i, '--device', 0, '--type', 'hdd', '--medium', disk_name, '--mtype', 'shareable', '--nonrotational', var_non_rotational]
 				end
 				asm_fra_disks.each do |disk|
-					unless File.exist?(disk[:asm_fra_disk_path])
-					  vb.customize ['createhd', '--filename', disk[:asm_fra_disk_path], '--size', disk[:asm_fra_disk_size].to_i * 1024]
+					disk_name=disk[:asm_fra_disk_path]
+					unless File.exist?(disk_name)
+					  vb.customize ['createhd', '--filename', disk_name, '--size', disk[:asm_fra_disk_size].to_i * 1024]
 					end
-					vb.customize ['storageattach', :id, '--storagectl', var_sata_controller_name, '--port', disk[:port].to_i, '--device', 0, '--type', 'hdd', '--medium', disk[:asm_fra_disk_path], '--nonrotational', var_non_rotational]
+					vb.customize ['storageattach', :id, '--storagectl', var_sata_controller_name, '--port', disk[:port].to_i, '--device', 0, '--type', 'hdd', '--medium', disk_name, '--mtype', 'shareable', '--nonrotational', var_non_rotational]
 				end
 				
 			end # end provider
