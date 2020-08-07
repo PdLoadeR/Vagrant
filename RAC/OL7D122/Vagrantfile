@@ -103,7 +103,10 @@ puts "----------------------------------------- CLUSTER MEMBERS ----------------
 puts "  Hostname  :   Public IP    :    Private IP    :    Virtual IP    :  Listener Port  :  EM Port  "
 puts "----------------------------------------------------------------------------------------------------"
 rac_nodes.each { |n| puts "#{n[:hostname]} : #{n[:public_ip]} : #{n[:private_ip]} : #{n[:virtual_ip]} : #{n[:listener_port]} : #{n[:em_port]}" }
-puts "------------------------------------------------"
+puts "-----------------------------------------  FILES  -------------------------------------------------"
+local_disks.each { |n| puts "#{n[:disk_path]} : #{n[:disk_size]} : #{n[:port]} " }
+asm_data_disks.each { |n| puts "#{n[:asm_data_disk_path]} : #{n[:asm_data_disk_size]} : #{n[:port]} " }
+asm_fra_disks.each { |n| puts "#{n[:asm_fra_disk_path]} : #{n[:asm_fra_disk_size]} : #{n[:port]} " }
 
 # Generate host_base and host_scan files that contain the information needed to be imported on each node's /etc/hosts file
 file = File.open("./shared/files/hosts_base", "w")
