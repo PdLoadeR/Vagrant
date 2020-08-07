@@ -18,8 +18,8 @@ var_public_subnet           = params['shared']['public_subnet']
 var_private_subnet          = params['shared']['private_subnet']
 var_dns_ip_address          = params['shared']['dns_ip_address']
 var_cluster_ip_start        = params['shared']['cluster_ip_start']
-var_listener_port_start       = params['shared']['listener_port_start']
-var_em_port_start             = params['shared']['em_port_start']
+var_listener_port_start     = params['shared']['listener_port_start']
+var_em_port_start           = params['shared']['em_port_start']
 var_host_only_adapter_name  = params['shared']['host_only_adapter_name']
 var_sata_controller_name    = params['shared']['sata_controller_name']
 
@@ -41,25 +41,6 @@ var_node_mem_size           = params['nodes']['mem_size']
 var_node_cpu                = params['nodes']['cpus']
 
 ####### Vagrant File Configuration
-### DNS
-Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-	config.vm.define var_cluster_name + "DNS" do |dns|
-		dns.vm.synced_folder var_software_folder, "/stage/df_Database"
-		dns.vm.box = var_box
-		dns.vm.provider "virtualbox" do |vb, override|
-			override.vm.network "private_network", ip: var_dns_ip_address, name: var_host_only_adapter_name
-			override.vm.hostname = var_cluster_name + "DNS" + "." + var_domain_name
-			vb.name = var_cluster_name + "DNS"
-			vb.customize ["modifyvm", :id, "--memory", var_dns_mem_size, "--cpus", var_dns_cpu, "--groups", "/#{var_cluster_name}"]
-			vb.customize ["storageattach", :id, "--storagectl", var_sata_controller_name, "--port", "0", "--nonrotational", var_non_rotational]
-		end # end provider
-		dns.vm.provision "shell", inline: <<-SHELL
-			sh /vagrant/scripts/1.DNSSetup.sh
-		SHELL
-	end # end DNS
-end
-
-### All Nodes
 ## Create the array of nodes and each node's configuration
 rac_nodes = []
 private_subnet_ip=var_private_subnet.split('.')[0,3].join('.') 
@@ -89,19 +70,60 @@ end
 
 # Print information of the members of the cluster
 puts "--------------- CLUSTER MEMBERS ----------------"
+puts "  Hostname  :  Public IP  :  Private IP  :  Virtual IP  :  Listener Port  :  EM Port  "
 rac_nodes.each { |n| puts "#{n[:hostname]} : #{n[:public_ip]} : #{n[:private_ip]} : #{n[:virtual_ip]} : #{n[:listener_port]} : #{n[:em_port]}" }
 puts "------------------------------------------------"
-puts "--------------- SCAN PORTS ----------------"
-scan_ports.each { |n| puts "#{n[:port]}   #{var_cluster_name}-scan.#{var_domain_name}   #{var_cluster_name} " }
-puts "------------------------------------------------"
-puts "--------------- HOST FILE  ----------------"
-puts "# Public"
-rac_nodes.each { |n| puts "#{n[:public_ip]} : #{n[:hostname]}.#{var_domain_name} : #{n[:hostname]} " }
-puts "# Private"
-rac_nodes.each { |n| puts "#{n[:private_ip]} : #{n[:hostname]}-priv.#{var_domain_name} : #{n[:hostname]}-priv " }
-puts "# Virtual"
-rac_nodes.each { |n| puts "#{n[:virtual_ip]} : #{n[:hostname]}-vip.#{var_domain_name} : #{n[:hostname]}-vip " }
-puts "------------------------------------------------"
+#puts "--------------- SCAN PORTS ----------------"
+#scan_ports.each { |n| puts "#{n[:port]}   #{var_cluster_name}-scan.#{var_domain_name}   #{var_cluster_name} " }
+#puts "------------------------------------------------"
+#puts "--------------- HOST FILE  ----------------"
+#puts "# Public"
+#rac_nodes.each { |n| puts "#{n[:public_ip]} : #{n[:hostname]}.#{var_domain_name} : #{n[:hostname]} " }
+#puts "# Private"
+#rac_nodes.each { |n| puts "#{n[:private_ip]} : #{n[:hostname]}-priv.#{var_domain_name} : #{n[:hostname]}-priv " }
+#puts "# Virtual"
+#rac_nodes.each { |n| puts "#{n[:virtual_ip]} : #{n[:hostname]}-vip.#{var_domain_name} : #{n[:hostname]}-vip " }
+#puts "------------------------------------------------"
+
+file = File.open("./shared/files/hosts_base", "w")
+file.puts "## This file is auto generated on each run"
+file.puts "# Public"
+rac_nodes.each { |n| file.puts "#{n[:public_ip]} : #{n[:hostname]}.#{var_domain_name} : #{n[:hostname]} " }
+file.puts "# Private"
+rac_nodes.each { |n| file.puts "#{n[:private_ip]} : #{n[:hostname]}-priv.#{var_domain_name} : #{n[:hostname]}-priv " }
+file.puts "# Virtual"
+rac_nodes.each { |n| file.puts "#{n[:virtual_ip]} : #{n[:hostname]}-vip.#{var_domain_name} : #{n[:hostname]}-vip " }
+file.close
+
+file = File.open("./shared/files/hosts_scan", "w")
+file.puts "## This file is auto generated on each run"
+file.puts "--------------- SCAN PORTS ----------------"
+scan_ports.each { |n| file.puts "#{n[:port]}   #{var_cluster_name}-scan.#{var_domain_name}   #{var_cluster_name} " }
+file.close
+
+### DNS
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+	### DNS
+	config.vm.define var_cluster_name + "DNS" do |dns|
+		dns.vm.synced_folder var_software_folder, "/stage/df_Database"
+		dns.vm.box = var_box
+		dns.vm.provider "virtualbox" do |vb, override|
+			override.vm.network "private_network", ip: var_dns_ip_address, name: var_host_only_adapter_name
+			override.vm.hostname = var_cluster_name + "DNS" + "." + var_domain_name
+			vb.name = var_cluster_name + "DNS"
+			vb.customize ["modifyvm", :id, "--memory", var_dns_mem_size, "--cpus", var_dns_cpu, "--groups", "/#{var_cluster_name}"]
+			vb.customize ["storageattach", :id, "--storagectl", var_sata_controller_name, "--port", "0", "--nonrotational", var_non_rotational]
+		end # end provider
+		dns.vm.provision "shell", inline: <<-SHELL
+			sh /vagrant/shared/scripts/1.DNSSetup.sh
+		SHELL
+	end # end DNS
+	
+	### Nodes
+	
+	# end Nodes
+end
+
 
 #Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 #  (1..var_cluster_node_count).each do |i|
