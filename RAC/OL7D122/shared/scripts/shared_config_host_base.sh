@@ -5,4 +5,4 @@ sed -i '1d' /etc/hosts
 tail -n +2 /vagrant/shared/files/hosts_base >> /etc/hosts
 
 # remove Window's CRLF (^M) line ending if present
-sed -i -e $'s/\r$//' /etc/hosts
+#sed -i -e $'s/\r$//' /etc/hosts

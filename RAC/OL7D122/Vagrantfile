@@ -109,7 +109,7 @@ asm_data_disks.each { |n| puts "#{n[:asm_data_disk_path]} : #{n[:asm_data_disk_s
 asm_fra_disks.each { |n| puts "#{n[:asm_fra_disk_path]} : #{n[:asm_fra_disk_size]} : #{n[:port]} " }
 
 # Generate host_base and host_scan files that contain the information needed to be imported on each node's /etc/hosts file
-file = File.open("./shared/files/hosts_base", "w")
+file = File.open("./shared/files/hosts_base", "wb")
 file.puts "## This file is auto generated on each run"
 file.puts "# Public"
 rac_nodes.each { |n| file.puts "#{n[:public_ip]} : #{n[:hostname]}.#{var_domain_name} : #{n[:hostname]} " }
@@ -119,13 +119,13 @@ file.puts "# Virtual"
 rac_nodes.each { |n| file.puts "#{n[:virtual_ip]} : #{n[:hostname]}-vip.#{var_domain_name} : #{n[:hostname]}-vip " }
 file.close
 
-file = File.open("./shared/files/hosts_scan", "w")
+file = File.open("./shared/files/hosts_scan", "wb")
 file.puts "## This file is auto generated on each run"
 file.puts "--------------- SCAN PORTS ----------------"
 scan_ports.each { |n| file.puts "#{n[:port]}   #{var_cluster_name}-scan.#{var_domain_name}   #{var_cluster_name} " }
 file.close
 
-file = File.open("./shared/files/resolv", "w")
+file = File.open("./shared/files/resolv", "wb")
 file.puts "## This file is auto generated on each run"
 file.puts "search localdomain"
 file.puts "nameserver #{var_dns_ip_address}"
@@ -134,83 +134,143 @@ file.close
 ### DNS
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 	### DNS
-	config.vm.define var_cluster_name + "DNS" do |dns|
-		dns.vm.box = var_box
-		dns.vm.provider "virtualbox" do |vb, override|
-			override.vm.network "private_network", ip: var_dns_ip_address, name: var_host_only_adapter_name
-			override.vm.hostname = var_cluster_name + "DNS" + "." + var_domain_name
-			vb.name = var_cluster_name + "DNS"
-			vb.customize [
-				"modifyvm", :id, 
-				"--memory", var_dns_mem_size, 
-				"--cpus", var_dns_cpu, 
-				"--groups", "/#{var_cluster_name}"
-			]
-			vb.customize [
-				"storageattach", :id, 
-				"--storagectl", var_sata_controller_name, 
-				"--port", "0", 
-				"--nonrotational", var_non_rotational
-			]
-		end # end provider
-		dns.vm.provision "shell", inline: <<-SHELL
-			sh /vagrant/shared/scripts/1.DNSSetup.sh
-		SHELL
-	end # end DNS
+	#config.vm.define var_cluster_name + "DNS" do |dns|
+	#	dns.vm.box = var_box
+	#	dns.vm.provider "virtualbox" do |vb, override|
+	#		override.vm.network "private_network", ip: var_dns_ip_address, name: var_host_only_adapter_name
+	#		override.vm.hostname = var_cluster_name + "DNS" + "." + var_domain_name
+	#		vb.name = var_cluster_name + "DNS"
+	#		vb.customize [
+	#			"modifyvm", :id, 
+	#			"--memory", var_dns_mem_size, 
+	#			"--cpus", var_dns_cpu, 
+	#			"--groups", "/#{var_cluster_name}"
+	#		]
+	#		vb.customize [
+	#			"storageattach", :id, 
+	#			"--storagectl", var_sata_controller_name, 
+	#			"--port", "0", 
+	#			"--nonrotational", var_non_rotational
+	#		]
+	#	end # end provider
+	#	dns.vm.provision "shell", inline: <<-SHELL
+	#		sh /vagrant/shared/scripts/1.DNSSetup.sh
+	#	SHELL
+	#end # end DNS
 	
 	### Nodes
-	rac_nodes.each do |node|
-		config.vm.define node[:hostname] do |node_config|
+	(1..var_cluster_node_count).each do |node_num|
+		node_name = var_cluster_name+"#{node_num}".rjust(2,'0')
+		config.vm.define node_name do |node_config|
 			node_config.vm.synced_folder var_software_folder, "/stage/df_Database"
 			node_config.vm.box = var_box
-			node_config.vm.network "forwarded_port", guest: 1521, host: node[:listener_port]
-			node_config.vm.network "forwarded_port", guest: 5500, host: node[:em_port]
-			node_config.vm.provider "virtualbox" do |vb, override|
-				override.vm.network "private_network", ip: node[:public_ip], name: var_host_only_adapter_name
-				override.vm.network "private_network", ip: node[:private_ip], virtualbox__intnet: "private"
-				override.vm.hostname = node[:hostname] + "." + var_domain_name
-				vb.name = node[:hostname]
+			node_config.vm.network "forwarded_port", guest: 1521, host: var_listener_port_start.to_i+node_num
+			node_config.vm.network "forwarded_port", guest: 5500, host: var_em_port_start.to_i+node_num
+			node_config.vm.network "private_network", ip: "#{public_subnet_ip}.#{host_ip.to_i+node_num}", name: var_host_only_adapter_name
+			node_config.vm.network "private_network", ip: "#{private_subnet_ip}.#{host_ip.to_i+node_num}", virtualbox__intnet: "private"
+			node_config.vm.hostname = node_name + "." + var_domain_name
+			
+			# Do Virtualbox configuration 
+			node_config.vm.provider :virtualbox do |vb|
+				
+				# Change RAC node specific settings 
+				vb.name = node_name
 				vb.customize [
 					"modifyvm", :id, 
 					"--memory", var_node_mem_size, 
 					"--cpus", var_node_cpu, 
 					"--groups", "/#{var_cluster_name}"
 				]
-				vb.customize [
-					"storageattach", :id, 
-					"--storagectl", var_sata_controller_name, 
-					"--port", "0", 
-					"--nonrotational", var_non_rotational
-				]
+
+				# Increase SATA port count for ASM Disks + extra 5
+				vb.customize ['storagectl', :id, '--name', var_sata_controller_name, '--portcount', var_ASM_DATA_disk_count + var_ASM_FRA_disk_count + 5 ]   
 				
-				local_disks.each do |disk|
-					disk_name=disk[:disk_path]+"\\#{var_cluster_name}\\#{node[:hostname]}_u01.vdi"
-					unless File.exist?(disk_name)
-					  vb.customize ['createhd', '--filename', disk_name, '--size', disk[:disk_size].to_i * 1024]
-					end
-					vb.customize ['storageattach', :id, '--storagectl', var_sata_controller_name, '--port', disk[:port].to_i, '--device', 0, '--type', 'hdd', '--medium', disk_name, '--nonrotational', var_non_rotational]
+				# Add /u01 disk at the begining so it becomes /dev/sdb1
+				var_u01_disk = var_shared_disk_folder +"\\" + var_cluster_name + "\\" + node_name + "_u01.vdi"
+				unless File.exist?(var_u01_disk)
+				  vb.customize ['createhd', '--filename', var_u01_disk, '--size', var_u01_size_GB * 1024]
 				end
-				asm_data_disks.each do |disk|
-					disk_name=disk[:asm_data_disk_path]
-					unless File.exist?(disk_name)
-					  vb.customize ['createhd', '--filename', disk_name, '--size', disk[:asm_data_disk_size].to_i * 1024]
-					end
-					vb.customize ['storageattach', :id, '--storagectl', var_sata_controller_name, '--port', disk[:port].to_i, '--device', 0, '--type', 'hdd', '--medium', disk_name, '--mtype', 'shareable', '--nonrotational', var_non_rotational]
-				end
-				asm_fra_disks.each do |disk|
-					disk_name=disk[:asm_fra_disk_path]
-					unless File.exist?(disk_name)
-					  vb.customize ['createhd', '--filename', disk_name, '--size', disk[:asm_fra_disk_size].to_i * 1024]
-					end
-					vb.customize ['storageattach', :id, '--storagectl', var_sata_controller_name, '--port', disk[:port].to_i, '--device', 0, '--type', 'hdd', '--medium', disk_name, '--mtype', 'shareable', '--nonrotational', var_non_rotational]
-				end
+				vb.customize ['storageattach', :id, '--storagectl', var_sata_controller_name, '--port', 1, '--device', 0, '--type', 'hdd', '--medium', var_u01_disk, '--nonrotational', var_non_rotational]
 				
-			end # end provider
+				# Add ASM Data Disks
+				(1..var_ASM_DATA_disk_count).each do |disk|
+					if ARGV[0] == "up" && ! File.exist?(var_shared_disk_folder +"\\" + var_cluster_name + "\\" + var_ASM_DATA_filename + "#{disk}".rjust(2,'0') + ".vdi")
+						if node_num == 1
+							vb.customize ['createhd',
+										'--filename', var_shared_disk_folder +"\\" + var_cluster_name + "\\" + var_ASM_DATA_filename + "#{disk}".rjust(2,'0') + ".vdi",
+										'--format', 'VDI',
+										'--variant', 'Fixed',
+										'--size', var_ASM_DATA_disk_size_GB * 1024]
+							vb.customize ['modifyhd',
+										 var_shared_disk_folder +"\\" + var_cluster_name + "\\" + var_ASM_DATA_filename + "#{disk}".rjust(2,'0') + ".vdi",
+										'--type', 'shareable']
+						end # End createmedium on rac1
+
+						vb.customize ['storageattach', :id,
+								'--storagectl', var_sata_controller_name,
+								'--port', "#{disk+1}",
+								'--device', 0,
+								'--type', 'hdd',
+								'--medium', var_shared_disk_folder +"\\" + var_cluster_name + "\\" + var_ASM_DATA_filename + "#{disk}".rjust(2,'0') + ".vdi",
+								'--nonrotational', 'on']
+					end  # End if exist
+				end    # End of EACH iterator for disks  
+				
+				# Add ASM FRA Disks
+				(1..var_ASM_FRA_disk_count).each do |disk|
+					if ARGV[0] == "up" && ! File.exist?(var_shared_disk_folder +"\\" + var_cluster_name + "\\" + var_ASM_FRA_filename + "#{disk}".rjust(2,'0') + ".vdi")
+						if node_num == 1
+							vb.customize ['createhd',
+										'--filename', var_shared_disk_folder +"\\" + var_cluster_name + "\\" + var_ASM_FRA_filename + "#{disk}".rjust(2,'0') + ".vdi",
+										'--format', 'VDI',
+										'--variant', 'Fixed',
+										'--size', var_ASM_FRA_disk_size_GB * 1024]
+							vb.customize ['modifyhd',
+										 var_shared_disk_folder +"\\" + var_cluster_name + "\\" + var_ASM_FRA_filename + "#{disk}".rjust(2,'0') + ".vdi",
+										'--type', 'shareable']
+						end # End createmedium on rac1
+
+						vb.customize ['storageattach', :id,
+								'--storagectl', var_sata_controller_name,
+								'--port', "#{disk+1+var_ASM_DATA_disk_count}",
+								'--device', 0,
+								'--type', 'hdd',
+								'--medium', var_shared_disk_folder +"\\" + var_cluster_name + "\\" + var_ASM_FRA_filename + "#{disk}".rjust(2,'0') + ".vdi",
+								'--nonrotational', 'on']
+					end  # End if exist
+				end    # End of EACH iterator for disks  
+				
+			end      # End of config.vm.provider
+			
 			node_config.vm.provision "shell", inline: <<-SHELL
 				sh /vagrant/shared/scripts/2.NodesSetup.sh
 			SHELL
-		end # end node	
-	end # end Nodes
+	  
+			# Create disk partitions   
+			#if node_num ==  1
+			#	config.vm.provision "shell", inline: <<-SHELL
+			#	if [ -f /etc/SFDISK_CREATE_DATE ]; then
+			#	 echo "Partition creation already done."
+			#	  exit 0
+			#	fi
+			#	for i in `ls /dev/sd* | grep -v sda`;  do echo \\; | sudo sfdisk -q $i; done
+			#	date > /etc/SFDISK_CREATE_DATE
+			#	SHELL
+			#end # End create disk partions
+			
+			#if node_num == servers
+			#	# Start Ansible provisioning
+			#	config.vm.provision "ansible" do |ansible|
+			#		#ansible.verbose = "-v"
+			#		ansible.limit = "all"
+			#		ansible.playbook = "ansible/rac_gi_db.yml"
+			#	end # End of Ansible provisioning
+			#end
+		
+	
+		end # node config
+	end # loop iteration
+	
 	# Shell Script to be run on all nodes goes here
 	#config.vm.provision "shell", inline: <<-SHELL
 	#	sh /vagrant/shared/scripts/zzzzzzzzzzzzzz.sh
