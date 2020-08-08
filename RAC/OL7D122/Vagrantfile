@@ -103,13 +103,13 @@ puts "----------------------------------------- CLUSTER MEMBERS ----------------
 puts "  Hostname  :   Public IP    :    Private IP    :    Virtual IP    :  Listener Port  :  EM Port  "
 puts "----------------------------------------------------------------------------------------------------"
 rac_nodes.each { |n| puts "#{n[:hostname]} : #{n[:public_ip]} : #{n[:private_ip]} : #{n[:virtual_ip]} : #{n[:listener_port]} : #{n[:em_port]}" }
-puts "-----------------------------------------  FILES  -------------------------------------------------"
-local_disks.each { |n| puts "#{n[:disk_path]} : #{n[:disk_size]} : #{n[:port]} " }
-asm_data_disks.each { |n| puts "#{n[:asm_data_disk_path]} : #{n[:asm_data_disk_size]} : #{n[:port]} " }
-asm_fra_disks.each { |n| puts "#{n[:asm_fra_disk_path]} : #{n[:asm_fra_disk_size]} : #{n[:port]} " }
+#puts "-----------------------------------------  FILES  -------------------------------------------------"
+#local_disks.each { |n| puts "#{n[:disk_path]} : #{n[:disk_size]} : #{n[:port]} " }
+#asm_data_disks.each { |n| puts "#{n[:asm_data_disk_path]} : #{n[:asm_data_disk_size]} : #{n[:port]} " }
+#asm_fra_disks.each { |n| puts "#{n[:asm_fra_disk_path]} : #{n[:asm_fra_disk_size]} : #{n[:port]} " }
 
 # Generate host_base and host_scan files that contain the information needed to be imported on each node's /etc/hosts file
-file = File.open("./shared/files/hosts_base", "wb")
+file = File.open("./shared/files/hosts_base", "w")
 file.puts "## This file is auto generated on each run"
 file.puts "# Public"
 rac_nodes.each { |n| file.puts "#{n[:public_ip]} : #{n[:hostname]}.#{var_domain_name} : #{n[:hostname]} " }
@@ -119,13 +119,13 @@ file.puts "# Virtual"
 rac_nodes.each { |n| file.puts "#{n[:virtual_ip]} : #{n[:hostname]}-vip.#{var_domain_name} : #{n[:hostname]}-vip " }
 file.close
 
-file = File.open("./shared/files/hosts_scan", "wb")
+file = File.open("./shared/files/hosts_scan", "w")
 file.puts "## This file is auto generated on each run"
 file.puts "--------------- SCAN PORTS ----------------"
 scan_ports.each { |n| file.puts "#{n[:port]}   #{var_cluster_name}-scan.#{var_domain_name}   #{var_cluster_name} " }
 file.close
 
-file = File.open("./shared/files/resolv", "wb")
+file = File.open("./shared/files/resolv", "w")
 file.puts "## This file is auto generated on each run"
 file.puts "search localdomain"
 file.puts "nameserver #{var_dns_ip_address}"
@@ -134,29 +134,29 @@ file.close
 ### DNS
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 	### DNS
-	#config.vm.define var_cluster_name + "DNS" do |dns|
-	#	dns.vm.box = var_box
-	#	dns.vm.provider "virtualbox" do |vb, override|
-	#		override.vm.network "private_network", ip: var_dns_ip_address, name: var_host_only_adapter_name
-	#		override.vm.hostname = var_cluster_name + "DNS" + "." + var_domain_name
-	#		vb.name = var_cluster_name + "DNS"
-	#		vb.customize [
-	#			"modifyvm", :id, 
-	#			"--memory", var_dns_mem_size, 
-	#			"--cpus", var_dns_cpu, 
-	#			"--groups", "/#{var_cluster_name}"
-	#		]
-	#		vb.customize [
-	#			"storageattach", :id, 
-	#			"--storagectl", var_sata_controller_name, 
-	#			"--port", "0", 
-	#			"--nonrotational", var_non_rotational
-	#		]
-	#	end # end provider
-	#	dns.vm.provision "shell", inline: <<-SHELL
-	#		sh /vagrant/shared/scripts/1.DNSSetup.sh
-	#	SHELL
-	#end # end DNS
+	config.vm.define var_cluster_name + "DNS" do |dns|
+		dns.vm.box = var_box
+		dns.vm.provider "virtualbox" do |vb, override|
+			override.vm.network "private_network", ip: var_dns_ip_address, name: var_host_only_adapter_name
+			override.vm.hostname = var_cluster_name + "DNS" + "." + var_domain_name
+			vb.name = var_cluster_name + "DNS"
+			vb.customize [
+				"modifyvm", :id, 
+				"--memory", var_dns_mem_size, 
+				"--cpus", var_dns_cpu, 
+				"--groups", "/#{var_cluster_name}"
+			]
+			vb.customize [
+				"storageattach", :id, 
+				"--storagectl", var_sata_controller_name, 
+				"--port", "0", 
+				"--nonrotational", var_non_rotational
+			]
+		end # end provider
+		dns.vm.provision "shell", inline: <<-SHELL
+			sh /vagrant/shared/scripts/1.DNSSetup.sh
+		SHELL
+	end # end DNS
 	
 	### Nodes
 	(1..var_cluster_node_count).each do |node_num|
