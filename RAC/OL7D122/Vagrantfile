@@ -272,10 +272,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 	end # loop iteration
 	
 	# Shell Script to be run on all nodes goes here
-	#config.vm.provision "shell", inline: <<-SHELL
-	#	sh /vagrant/shared/scripts/zzzzzzzzzzzzzz.sh
-	#SHELL
-	#
+	config.vm.provision "shell", inline: <<-SHELL
+		sh /vagrant/shared/scripts/shared_config_passwordless_ssh_finalize.sh
+	SHELL
+	
 end
 
 

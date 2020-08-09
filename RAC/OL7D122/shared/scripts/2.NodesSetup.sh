@@ -32,16 +32,16 @@ echo " +-----------------------------------------------------------+"
 sh /vagrant/shared/scripts/shared_config_host_base.sh
 
 echo " +-----------------------------------------------------------+"
-echo " |  Step 5. Update /etc/hosts and add SCAN ports info        |"
-echo " |   Date: "`date +"%Y/%m/%d-%H:%M:%S"`"                               |"
-echo " +-----------------------------------------------------------+"
-sh /vagrant/shared/scripts/shared_config_host_scan.sh
-
-echo " +-----------------------------------------------------------+"
-echo " |  Step 6. Update resolve.conf and stop NetworkManager      |"
+echo " |  Step 5. Update resolve.conf and stop NetworkManager      |"
 echo " |   Date: "`date +"%Y/%m/%d-%H:%M:%S"`"                               |"
 echo " +-----------------------------------------------------------+"
 sh /vagrant/shared/scripts/shared_config_resovlve.sh
+
+echo " +-----------------------------------------------------------+"
+echo " |  Step 6. Configure shared ASM Disks                       |"
+echo " |   Date: "`date +"%Y/%m/%d-%H:%M:%S"`"                               |"
+echo " +-----------------------------------------------------------+"
+sh /vagrant/shared/scripts/shared_config_ASM_disks.sh
 
 echo " +-----------------------------------------------------------+"
 echo " |  Step 7. Configure Chrony                                 |"
@@ -72,6 +72,18 @@ echo " |  Step 11. Finalize oracle user                            |"
 echo " |   Date: "`date +"%Y/%m/%d-%H:%M:%S"`"                               |"
 echo " +-----------------------------------------------------------+"
 sh /vagrant/shared/scripts/shared_finalize_oracle_user.sh
+
+echo " +-----------------------------------------------------------+"
+echo " |  Step 12. Generate ssh public key for root user           |"
+echo " |   Date: "`date +"%Y/%m/%d-%H:%M:%S"`"                               |"
+echo " +-----------------------------------------------------------+"
+sh /vagrant/shared/scripts/shared_config_passwordless_ssh_root.sh
+
+echo " +-----------------------------------------------------------+"
+echo " |  Step 13. Generate ssh public key for oracle user         |"
+echo " |   Date: "`date +"%Y/%m/%d-%H:%M:%S"`"                               |"
+echo " +-----------------------------------------------------------+"
+su - oracle -c 'sh /vagrant/shared/scripts/shared_config_passwordless_ssh_oracle.sh'
 
 echo "+----------------------------------------------------------------------------+"
 echo "|                                                                            |"

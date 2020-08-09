@@ -6,3 +6,4 @@
 *.bin
 *.vdi
 *.rpm
+authorized_keys_*

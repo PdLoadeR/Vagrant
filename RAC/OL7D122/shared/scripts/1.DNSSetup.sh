@@ -35,9 +35,23 @@ echo " |   Date: "`date +"%Y/%m/%d-%H:%M:%S"`"                               |"
 echo " +-----------------------------------------------------------+"
 echo -e "${root_pass}\n${root_pass}" | passwd
 
+echo " +-----------------------------------------------------------+"
+echo " |  Step 5. Update /etc/hosts and add all nodes' info        |"
+echo " |   Date: "`date +"%Y/%m/%d-%H:%M:%S"`"                               |"
+echo " +-----------------------------------------------------------+"
+sh /vagrant/shared/scripts/shared_config_host_base.sh
+
+echo " +-----------------------------------------------------------+"
+echo " |  Step 6. Update /etc/hosts and add SCAN ports info        |"
+echo " |   Date: "`date +"%Y/%m/%d-%H:%M:%S"`"                               |"
+echo " +-----------------------------------------------------------+"
+sh /vagrant/shared/scripts/shared_config_host_scan.sh
+
+
 echo "+----------------------------------------------------------------------------+"
 echo "|                                                                            |"
 echo "|                Finish - 1.DNSSetup.sh Script.                              |"
 echo "|                  Date: "`date +"%Y/%m/%d-%H:%M:%S"`"                                 |"
 echo "|                                                                            |"
 echo "+----------------------------------------------------------------------------+"
+
