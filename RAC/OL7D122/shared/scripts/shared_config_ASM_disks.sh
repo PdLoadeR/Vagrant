@@ -1,8 +1,12 @@
 #!/bin/bash
 # Export ASM related variables from the vagrant.yaml file
-while read assign; do
+#while read assign; do
+# export "$assign"; 
+#done < <(cat /vagrant/config/vagrant.yml | grep ASM | sed 's/ //g' | sed 's/:/=/g' | sed "s/'//g")
+cat /vagrant/config/vagrant.yml | grep ASM | sed 's/ //g' | sed 's/:/=/g' | sed "s/'//g" > /tmp/test.tmp
+while read assign; do 
  export "$assign"; 
-done < <(cat /vagrant/config/vagrant.yml | grep ASM | sed 's/: /=/g' | sed "s/'//g" | sed 's/ //g')
+done < /tmp/test.tmp
 
 # get all disks into an array
 disks=($(ls  /dev/sd* | grep -v '[0-9]')) 
@@ -34,7 +38,7 @@ for i in $(echo ${disks[@]}); do
 	 disk_num=1
 	fi
 cat >> /etc/udev/rules.d/99-oracle-asmdevices.rules <<EOF
-KERNEL=="sd?1", SUBSYSTEM=="block", PROGRAM=="/usr/lib/udev/scsi_id -g -u -d /dev/\$parent", RESULT=="${ASM_DISK}", SYMLINK+="oracleasm/${disk_name}$(printf "%02d" $disk_num)", OWNER="oracle", GROUP="dba", MODE="0660"
+KERNEL=="sd?1", SUBSYSTEM=="block", PROGRAM=="/usr/lib/udev/scsi_id -g -u -d /dev/\$parent", RESULT=="${ASM_DISK}", SYMLINK+="oracleasm/asm_${disk_name}$(printf "%02d" $disk_num)", OWNER="oracle", GROUP="dba", MODE="0660"
 EOF
         let "disk_num+=1"
 done
