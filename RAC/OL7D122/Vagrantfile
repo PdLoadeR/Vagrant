@@ -251,7 +251,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 			if node_num == var_cluster_node_count
 				(1..var_cluster_node_count).each do |node_num|
 					node_name = var_cluster_name+"#{node_num}".rjust(2,'0')					
-					config.vm.provision "shell" do |s|
+					node_config.vm.provision "shell" do |s|
 					  s.inline = "sshpass -f /tmp/temp1.txt ssh user@${node_name} 'sh /vagrant/shared/scripts/shared_config_passwordless_ssh_finalize.sh'"
 					  s.args   = node_name
 					end						
