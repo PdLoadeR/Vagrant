@@ -28,4 +28,4 @@ dns:
   
 nodes:
   mem_size: 10240
-  cpus: 6
+  cpus: 4

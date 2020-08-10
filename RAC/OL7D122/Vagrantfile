@@ -245,7 +245,19 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 			node_config.vm.provision "shell", inline: <<-SHELL
 				sh /vagrant/shared/scripts/2.NodesSetup.sh
 			SHELL
-	  
+
+	
+			# run only after last node is created
+			if node_num == var_cluster_node_count
+				(1..var_cluster_node_count).each do |node_num|
+					node_name = var_cluster_name+"#{node_num}".rjust(2,'0')					
+					config.vm.provision "shell" do |s|
+					  s.inline = "sshpass -f /tmp/temp1.txt ssh user@${node_name} 'sh /vagrant/shared/scripts/shared_config_passwordless_ssh_finalize.sh'"
+					  s.args   = node_name
+					end						
+				end
+			end
+			
 			# Create disk partitions   
 			#if node_num ==  1
 			#	config.vm.provision "shell", inline: <<-SHELL
@@ -258,7 +270,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 			#	SHELL
 			#end # End create disk partions
 			
-			#if node_num == servers
+			#if node_num == var_cluster_node_count
 			#	# Start Ansible provisioning
 			#	config.vm.provision "ansible" do |ansible|
 			#		#ansible.verbose = "-v"
