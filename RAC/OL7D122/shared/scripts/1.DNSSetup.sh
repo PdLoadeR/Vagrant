@@ -30,19 +30,28 @@ systemctl enable dnsmasq
 systemctl restart dnsmasq
 
 echo " +-----------------------------------------------------------+"
-echo " |  Step 4. Reset root password                              |"
+echo " |  Step 4. Open firewall port for tcp/udp                   |"
+echo " |   Date: "`date +"%Y/%m/%d-%H:%M:%S"`"                               |"
+echo " +-----------------------------------------------------------+"
+firewall-cmd --zone=public --add-port=53/tcp
+firewall-cmd --zone=public --add-port=53/udp
+firewall-cmd --permanent --zone=public --add-port=53/tcp
+firewall-cmd --permanent --zone=public --add-port=53/udp
+
+echo " +-----------------------------------------------------------+"
+echo " |  Step 5. Reset root password                              |"
 echo " |   Date: "`date +"%Y/%m/%d-%H:%M:%S"`"                               |"
 echo " +-----------------------------------------------------------+"
 echo -e "${root_pass}\n${root_pass}" | passwd
 
 echo " +-----------------------------------------------------------+"
-echo " |  Step 5. Update /etc/hosts and add all nodes' info        |"
+echo " |  Step 6. Update /etc/hosts and add all nodes' info        |"
 echo " |   Date: "`date +"%Y/%m/%d-%H:%M:%S"`"                               |"
 echo " +-----------------------------------------------------------+"
 sh /vagrant/shared/scripts/shared_config_host_base.sh
 
 echo " +-----------------------------------------------------------+"
-echo " |  Step 6. Update /etc/hosts and add SCAN ports info        |"
+echo " |  Step 7. Update /etc/hosts and add SCAN ports info        |"
 echo " |   Date: "`date +"%Y/%m/%d-%H:%M:%S"`"                               |"
 echo " +-----------------------------------------------------------+"
 sh /vagrant/shared/scripts/shared_config_host_scan.sh
