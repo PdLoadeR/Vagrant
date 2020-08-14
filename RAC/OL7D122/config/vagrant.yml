@@ -16,11 +16,11 @@ shared:
   shared_disk_folder: 'F:\~Vagrant\VMDisks'
   u01_size_GB: 100
   ASM_DATA_filename: 'ASMDATA'
-  ASM_DATA_disk_count: 7
-  ASM_DATA_disk_size_GB: 10
+  ASM_DATA_disk_count: 2
+  ASM_DATA_disk_size_GB: 1
   ASM_FRA_filename: 'ASMFRA'
-  ASM_FRA_disk_count: 3
-  ASM_FRA_disk_size_GB: 10
+  ASM_FRA_disk_count: 1
+  ASM_FRA_disk_size_GB: 1
 
 dns:
   mem_size: 1024

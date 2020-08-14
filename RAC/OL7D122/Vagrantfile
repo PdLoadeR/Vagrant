@@ -131,6 +131,12 @@ file.puts "search localdomain"
 file.puts "nameserver #{var_dns_ip_address}"
 file.close
 
+# Generate passwordless ssh final scripts
+file = File.open("./shared/files/passwordlesssssh_finalize.sh", "w")
+file.puts "## This file is auto generated on each run"
+rac_nodes.each { |n| file.puts "sshpass -f /tmp/temp1.txt ssh -o StrictHostKeyChecking=no user@#{n[:hostname]} 'sh /vagrant/shared/scripts/shared_config_passwordless_ssh_finalize.sh' " }
+file.close
+
 ### DNS
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 	### DNS
@@ -249,14 +255,20 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 	
 			# run only after last node is created
 			if node_num == var_cluster_node_count
-				(1..var_cluster_node_count).each do |node_num|
-					node_name = var_cluster_name+"#{node_num}".rjust(2,'0')					
-					node_config.vm.provision "shell" do |s|
-					  s.inline = "sshpass -f /tmp/temp1.txt ssh user@${node_name} 'sh /vagrant/shared/scripts/shared_config_passwordless_ssh_finalize.sh'"
-					  s.args   = node_name
-					end						
-				end
+			  node_config.vm.provision "shell", inline: <<-SHELL
+				sh /vagrant/shared/files/passwordlesssssh_finalize.sh
+			  SHELL
 			end
+			
+			#if node_num == var_cluster_node_count
+			#	(1..var_cluster_node_count).each do |node_num|
+			#		node_name = var_cluster_name+"#{node_num}".rjust(2,'0')					
+			#		node_config.vm.provision "shell" do |s|
+			#		  s.inline = "sshpass -f /tmp/temp1.txt ssh user@${node_name} 'sh /vagrant/shared/scripts/shared_config_passwordless_ssh_finalize.sh'"
+			#		  s.args   = node_name
+			#		end						
+			#	end
+			#end
 			
 			# Create disk partitions   
 			#if node_num ==  1
