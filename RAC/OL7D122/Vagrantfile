@@ -300,6 +300,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 	#	sh /vagrant/shared/scripts/shared_config_passwordless_ssh_finalize.sh
 	#SHELL
 	
+	# removing all the config files before destroying so that ssh keys and network info are fresh everytime
+	config.trigger.before :destroy do |trigger|
+		trigger.warn = "Removing all the files in /vagrant/shared/files/*"
+		trigger.run_remote = {inline: "rm -rf /vagrant/shared/files/*"}
+	end
+	
 end
 
 
