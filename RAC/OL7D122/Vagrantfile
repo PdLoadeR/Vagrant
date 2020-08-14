@@ -134,7 +134,7 @@ file.close
 # Generate passwordless ssh final scripts
 file = File.open("./shared/files/passwordlesssssh_finalize.sh", "w")
 file.puts "## This file is auto generated on each run"
-rac_nodes.each { |n| file.puts "sshpass -f /tmp/temp1.txt ssh -o StrictHostKeyChecking=no user@#{n[:hostname]} 'sh /vagrant/shared/scripts/shared_config_passwordless_ssh_finalize.sh' " }
+rac_nodes.each { |n| file.puts "sshpass -f /tmp/temp1.txt ssh -o StrictHostKeyChecking=no root@#{n[:hostname]} 'sh /vagrant/shared/scripts/shared_config_passwordless_ssh_finalize.sh' " }
 file.close
 
 ### DNS
