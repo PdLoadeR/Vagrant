@@ -51,15 +51,17 @@ cat /etc/udev/rules.d/99-oracle-asmdevices.rules
 
 disks=($(ls  /dev/sd* | grep '[0-9]' | grep -v a | grep -v b))
 for i in $(echo ${disks[@]}); do
-	/usr/sbin/partprobe $i
+	sudo /usr/sbin/partprobe $i
 done
+ls -l /dev/sd*1
 sleep 10
 /sbin/udevadm control --reload-rules
 sleep 10
 disks=($(ls  /dev/sd* | grep '[0-9]' | grep -v a | grep -v b))
 for i in $(echo ${disks[@]}); do
-	/usr/sbin/partprobe $i
+	sudo /usr/sbin/partprobe $i
 done
+ls -l /dev/sd*1
 sleep 10
 /sbin/udevadm control --reload-rules
 sleep 10

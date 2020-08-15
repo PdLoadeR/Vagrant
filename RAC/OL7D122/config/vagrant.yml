@@ -4,7 +4,7 @@ shared:
   software_folder: 'F:\~Oracle Tutorial Folder\Software\OracleSoftware'
   domain_name: localdomain
   cluster_name: 'OL7D122RAC'
-  cluster_node_count: 3
+  cluster_node_count: 4
   public_subnet: 192.168.56.0
   private_subnet: 192.168.1.0
   dns_ip_address: 192.168.56.100
@@ -13,10 +13,10 @@ shared:
   em_port_start: 5530
   host_only_adapter_name: 'VirtualBox Host-Only Ethernet Adapter'
   sata_controller_name: 'SATA'
-  shared_disk_folder: 'F:\~Vagrant\VMDisks'
+  shared_disk_folder: '\\192.168.0.106\VirtualMachines\VMDisks'
   u01_size_GB: 100
   ASM_DATA_filename: 'ASMDATA'
-  ASM_DATA_disk_count: 4
+  ASM_DATA_disk_count: 5
   ASM_DATA_disk_size_GB: 20
   ASM_FRA_filename: 'ASMFRA'
   ASM_FRA_disk_count: 4
