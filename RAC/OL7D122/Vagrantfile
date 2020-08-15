@@ -295,11 +295,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 		end # node config
 	end # loop iteration
 	
-	# Shell Script to be run on all nodes goes here
-	#config.vm.provision "shell", inline: <<-SHELL
-	#	sh /vagrant/shared/scripts/shared_config_passwordless_ssh_finalize.sh
-	#SHELL
-	
 	# removing all the config files before destroying so that ssh keys and network info are fresh everytime
 	config.trigger.before :destroy do |trigger|
 		trigger.warn = "Removing all the files in /vagrant/shared/files/*"

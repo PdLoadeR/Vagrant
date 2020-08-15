@@ -37,6 +37,7 @@ firewall-cmd --zone=public --add-port=53/tcp
 firewall-cmd --zone=public --add-port=53/udp
 firewall-cmd --permanent --zone=public --add-port=53/tcp
 firewall-cmd --permanent --zone=public --add-port=53/udp
+systemctl restart dnsmasq
 
 echo " +-----------------------------------------------------------+"
 echo " |  Step 5. Reset root password                              |"
