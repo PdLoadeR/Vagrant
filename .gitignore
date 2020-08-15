@@ -7,3 +7,4 @@
 *.vdi
 *.rpm
 authorized_keys_*
+p_*
